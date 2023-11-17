@@ -2,9 +2,9 @@ library(ggplot2)
 library(gganimate)
 #library(mapdata)
 library(ggmap)
-library(geojsonsf)
 library(osmdata)
 
+library(geojsonsf)
 einp_map <- geojson_sf("https://github.com/Red-Sigma/proj-ki-geo/raw/main/resources/Elk_Island_National_Park.geojson")
 plot(einp_map) 
 
