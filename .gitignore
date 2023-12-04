@@ -49,3 +49,6 @@ po/*~
 # RStudio Connect folder
 rsconnect/
 
+# ---> Media files
+
+**/bison_movement.mp4
