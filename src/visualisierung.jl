@@ -32,8 +32,15 @@ df_for_tom = load("../data/GPS collar data for Thom--2023-05-10.RData")["df_for_
 # ╔═╡ 7f4eff84-42cf-4865-9caf-93207f1539b8
 b01 = filter(x -> coalesce(x.animalID == "B01", false), df_for_tom)
 
-# ╔═╡ 0ddee48c-f714-41f3-8b16-32643062976f
+# ╔═╡ 24014edd-cb23-4172-86ec-73cbfc84b0d8
+df_without_outlier = filter(x -> coalesce((x.longitude > -114 && x.longitude < -112) && (x.latitude < 54), false), df_for_tom)
 
+# ╔═╡ 7a0fd47a-fc38-42a5-8420-5f2284e0ce83
+df_elk = filter(df_without_outlier) do x
+	coalesce(x.animalID == "E27", false)
+end
+
+# ╔═╡ 0ddee48c-f714-41f3-8b16-32643062976f
 fig, ax, x = scatterlines(b01.longitude, b01.latitude)
 
 # ╔═╡ 445284ef-f3de-4e1d-96d3-0b2e5f49cdc9
@@ -44,10 +51,11 @@ begin
 	function bison_movement(bison)
 		fig = Figure()
 		# TODO fix ascpect ratio of long and lat
-		ax = Axis(fig[1,1], autolimitaspect = 1.5, title = "Bison $(bison.animalID[1]) movement")
+		ax = Axis(fig[1,1], autolimitaspect = 1.6, title = "Bison $(bison.animalID[1]) movement")
 		# TODO remove fill and change colour
 		poly!(ax, einp_map)
-		scatterlines!(ax, bison.longitude, bison.latitude, color = :orange)
+		scatterlines!(ax, bison.longitude, bison.latitude, color = :orange, alpha = 0.5)
+		
 		fig
 	end
 	bison_movement(b01)
@@ -56,28 +64,37 @@ end
 # ╔═╡ 62ed0648-0034-4f1c-a2fc-113be97b1ba1
 md"
 ## Animation
-for the animation we create a stepping function that moves our data forward one step
+
+For the animation we make a normal plot but define a variable that will change over time (`time` in our case) and make it an observable so that makie recomputes the plot if our variabel changes.
+
+Through the use of the lift macro, we create a function that just takes time and applies it's value to our data. In this case we use time as the row index in our dataframe.
+
+In the recording we then just have to update time in order for the plot to be redrawn.
 "
-
-# ╔═╡ 25b9b774-f406-40f8-9cee-2d3dc2ef61ea
-b01[1,:].longitude
-
-# ╔═╡ e20f2798-ca8c-4662-b0a0-c9dad5dccf61
-1:nrow(b01[1:100,:])
 
 # ╔═╡ 1b3750d9-b247-4ec5-af25-117eb3b53861
 begin
-	anim_fig = Figure()
-	anim_ax = Axis(fig[1,1], autolimitaspect = 1.5, title = "Bison $(b01.animalID[1]) movement")
-	poly!(anim_ax, einp_map)
-	#obs = Observable()
-	#scatterlines!(anim_ax, b01[1,:].longitude, b01[1,:].latitude)
+	function movement_animation(animal)
+		time = Observable(1)
 
-	#record(anim_fig, "bison_movement.mp4", eachrow(b01[1:10,:]), framerate = 30) do row
-	record(anim_ax, "bison_movement.mp4", 1:100) do i
-		scatterlines!(anim_ax, b01[i,:].longitude, b01[i,:].latitude)
-		anim_fig
+		xs = range(0, 7, length=40)
+
+		longitude = @lift(animal[$time,:].longitude)
+		latitude = @lift(animal[$time,:].latitude)
+		
+		fig = Figure()
+		anim_ax = Axis(fig[1,1], autolimitaspect = 1.6, title = "Bison $(animal.animalID[1]) movement")
+		poly!(anim_ax, einp_map)
+		scatterlines!(anim_ax, longitude, latitude)
+		fig
+		record(fig, "bison_movement.mp4", 1:nrow(b01)) do i
+			time[] = i
+		end
 	end
+	# TODO animation is relativ lang und nicht sehr anschaulich
+	# wenn man verschiedene Tiere gleichzeitig sehen möchte
+	# muss man Zeilen gruppieren
+	#movement_animation(b01)
 end
 
 # ╔═╡ b43f82af-7652-4cfe-b29a-7f1032aeb734
@@ -128,7 +145,7 @@ RData = "~1.0.0"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.2"
+julia_version = "1.9.3"
 manifest_format = "2.0"
 project_hash = "3ccb49a14ea29faea4754063e1829b462b02421a"
 
@@ -1909,17 +1926,17 @@ version = "3.5.0+0"
 # ╟─fc675bdc-79be-4226-9527-c5a978b2e32e
 # ╠═cfd48c38-7ce8-11ee-3242-ed3f01534983
 # ╟─f1040093-2589-452e-b809-0b375abf7986
-# ╟─7f4eff84-42cf-4865-9caf-93207f1539b8
+# ╠═7f4eff84-42cf-4865-9caf-93207f1539b8
+# ╠═24014edd-cb23-4172-86ec-73cbfc84b0d8
+# ╠═7a0fd47a-fc38-42a5-8420-5f2284e0ce83
 # ╠═0ddee48c-f714-41f3-8b16-32643062976f
 # ╠═accfd426-1bd5-462b-8a88-5361af1e5533
 # ╠═445284ef-f3de-4e1d-96d3-0b2e5f49cdc9
 # ╠═9df16673-edb4-4feb-a9dd-3ff1c68fb444
 # ╟─62ed0648-0034-4f1c-a2fc-113be97b1ba1
-# ╠═25b9b774-f406-40f8-9cee-2d3dc2ef61ea
-# ╠═e20f2798-ca8c-4662-b0a0-c9dad5dccf61
 # ╠═1b3750d9-b247-4ec5-af25-117eb3b53861
-# ╠═b43f82af-7652-4cfe-b29a-7f1032aeb734
-# ╠═22216176-b430-47df-b370-4414c0bdcc94
+# ╟─b43f82af-7652-4cfe-b29a-7f1032aeb734
+# ╟─22216176-b430-47df-b370-4414c0bdcc94
 # ╠═4c13960d-1108-4b78-bc36-3593b9c54925
 # ╠═28669a69-da0e-40b3-a43b-eabc28fd3eda
 # ╟─00000000-0000-0000-0000-000000000001
