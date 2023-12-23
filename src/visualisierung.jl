@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.32
+# v0.19.36
 
 using Markdown
 using InteractiveUtils
@@ -44,21 +44,33 @@ end
 fig, ax, x = scatterlines(b01.longitude, b01.latitude)
 
 # ╔═╡ 445284ef-f3de-4e1d-96d3-0b2e5f49cdc9
-einp_map = GeoJSON.read(read("../data/Elk_Island_National_Park.geojson"))
+begin
+	einp_map = GeoJSON.read(read("../data/Elk_Island_National_Park.geojson"))
+	water_layer = GeoJSON.read(read("../data/layers/natural_water.geojson"))
+	wetland_layer = GeoJSON.read(read("../data/layers/natural_wetland.geojson"))
+	highway = GeoJSON.read(read("../data/layers/highway.geojson"))
+end
+
+# ╔═╡ 37c91a9f-09fd-439f-a749-270a5ae2988e
+colors = Makie.wong_colors()
 
 # ╔═╡ 9df16673-edb4-4feb-a9dd-3ff1c68fb444
 begin
-	function bison_movement(bison)
+	function bison_movement(bison, anim_color = :orange)
 		fig = Figure()
 		# TODO fix ascpect ratio of long and lat
-		ax = Axis(fig[1,1], autolimitaspect = 1.6, title = "Bison $(bison.animalID[1]) movement")
-		# TODO remove fill and change colour
-		poly!(ax, einp_map)
-		scatterlines!(ax, bison.longitude, bison.latitude, color = :orange, alpha = 0.5)
+		ax = Axis(fig[1,1], autolimitaspect = 1.6, title = "$(bison[1,:].species) $(bison.animalID[1]) movement")
+		poly!(ax, einp_map, color = (:black, 0.0), strokecolor = :green, strokewidth=1)
+		poly!(ax, water_layer, color = colors[5])
+		poly!(ax, wetland_layer, color = colors[3])
+		scatterlines!(ax, highway, color = colors[7], markersize = 0)
+
+		scatterlines!(ax, bison.longitude, bison.latitude, color = (anim_color, 0.5), alpha = 0.5)
 		
 		fig
 	end
-	bison_movement(b01)
+	#bison_movement(b01, colors[2])
+	bison_movement(df_elk, colors[4])
 end
 
 # ╔═╡ 62ed0648-0034-4f1c-a2fc-113be97b1ba1
@@ -84,18 +96,26 @@ begin
 		
 		fig = Figure()
 		anim_ax = Axis(fig[1,1], autolimitaspect = 1.6, title = "Bison $(animal.animalID[1]) movement")
-		poly!(anim_ax, einp_map)
-		scatterlines!(anim_ax, longitude, latitude)
+		poly!(anim_ax, einp_map, color = (:black, 0.0), strokecolor = :green, strokewidth=1)
+		poly!(anim_ax, water_layer, color = colors[5])
+		poly!(anim_ax, wetland_layer, color = colors[3])
+		scatterlines!(anim_ax, highway, color = colors[7], markersize = 0)
+
+		scatterlines!(anim_ax, longitude, latitude, color = (colors[2], 0.5))
+
 		fig
-		record(fig, "bison_movement.mp4", 1:nrow(b01)) do i
+
+		record(fig, "bison_movement.mp4", 1:nrow(b01) / 4) do i
 			time[] = i
 		end
 	end
 	# TODO animation is relativ lang und nicht sehr anschaulich
 	# wenn man verschiedene Tiere gleichzeitig sehen möchte
 	# muss man Zeilen gruppieren
-	#movement_animation(b01)
 end
+
+# ╔═╡ 591c6888-702c-4db3-80c7-e8124a31b5aa
+movement_animation(b01)
 
 # ╔═╡ b43f82af-7652-4cfe-b29a-7f1032aeb734
 const einp_longitude = Dict(
@@ -145,7 +165,7 @@ RData = "~1.0.0"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.3"
+julia_version = "1.9.4"
 manifest_format = "2.0"
 project_hash = "3ccb49a14ea29faea4754063e1829b462b02421a"
 
@@ -919,12 +939,12 @@ version = "0.3.1"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.3"
+version = "0.6.4"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "7.84.0+0"
+version = "8.4.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -933,7 +953,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.10.2+0"
+version = "1.11.0+1"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1902,7 +1922,7 @@ version = "1.3.7+1"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.48.0+0"
+version = "1.52.0+1"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1928,16 +1948,18 @@ version = "3.5.0+0"
 # ╟─f1040093-2589-452e-b809-0b375abf7986
 # ╠═7f4eff84-42cf-4865-9caf-93207f1539b8
 # ╠═24014edd-cb23-4172-86ec-73cbfc84b0d8
-# ╠═7a0fd47a-fc38-42a5-8420-5f2284e0ce83
+# ╟─7a0fd47a-fc38-42a5-8420-5f2284e0ce83
 # ╠═0ddee48c-f714-41f3-8b16-32643062976f
 # ╠═accfd426-1bd5-462b-8a88-5361af1e5533
 # ╠═445284ef-f3de-4e1d-96d3-0b2e5f49cdc9
+# ╠═37c91a9f-09fd-439f-a749-270a5ae2988e
 # ╠═9df16673-edb4-4feb-a9dd-3ff1c68fb444
 # ╟─62ed0648-0034-4f1c-a2fc-113be97b1ba1
 # ╠═1b3750d9-b247-4ec5-af25-117eb3b53861
+# ╠═591c6888-702c-4db3-80c7-e8124a31b5aa
 # ╟─b43f82af-7652-4cfe-b29a-7f1032aeb734
 # ╟─22216176-b430-47df-b370-4414c0bdcc94
-# ╠═4c13960d-1108-4b78-bc36-3593b9c54925
-# ╠═28669a69-da0e-40b3-a43b-eabc28fd3eda
+# ╟─4c13960d-1108-4b78-bc36-3593b9c54925
+# ╟─28669a69-da0e-40b3-a43b-eabc28fd3eda
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
