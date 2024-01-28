@@ -1,0 +1,40 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Load the real tracking data and import all required libraries.
+```{r}
+load("./GPS collar data for Thom--2023-05-10.RData") # load data from file
+B01 <- subset(df_for_tom, animalID == "B01")         # take one bison subset
+df_filtered <- filter(df_for_tom, longitude > -114 & longitude < -112.7)
+
+library(ggplot2)
+library(dplyr)
+```
+
+normal scatterplot
+```{r}
+ggplot(df_filtered, aes(x=longitude, y=latitude, col = species)) + geom_point(alpha = 0.25)
+ggsave("plots/scatterplot.png")
+```
+
+
+heatmap
+```{r}
+# Show the area only
+ggplot(df_filtered, aes(x = longitude, y = latitude)) +
+  stat_density_2d(aes(fill = after_stat(level)),
+                  geom = "polygon",
+                  h = c(0.003, 0.003)) + # h: wie viele Punkte zusammengefasst werden
+  scale_fill_continuous(type = "viridis")
+```
+
+```{r}
+# Bin size control + color palette
+ggplot(df_filtered, aes(x=longitude, y=latitude) ) +
+  geom_bin2d(bins = 100) +
+  scale_fill_continuous(type = "viridis") +
+  theme_bw()
+```
+
